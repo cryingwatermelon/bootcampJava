@@ -3,6 +3,7 @@ package com.watermelon.beatckc.controller;
 import com.watermelon.beatckc.entity.Fetchers;
 import com.watermelon.beatckc.entity.Tables;
 import com.watermelon.beatckc.entity.dto.GetView;
+import com.watermelon.beatckc.validation.NoQQEmailPattern;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Positive;
 import org.babyfish.jimmer.sql.JSqlClient;
@@ -41,9 +42,9 @@ public class UserInfoController implements Tables, Fetchers {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    // TODO   不允许QQ邮箱的自定义校验
+    // 不允许QQ邮箱的自定义校验
     @GetMapping("/query")
-    public ResponseEntity<GetView> getUserByEmail(@RequestParam @Email String email) {
+    public ResponseEntity<GetView> getUserByEmail(@RequestParam @Email @NoQQEmailPattern(message = "自定义邮箱错误") String email) {
         var result = jSqlClient.createQuery(BASICINFO_TABLE)
                 .where(BASICINFO_TABLE.email().eq(email))
                 .select(
