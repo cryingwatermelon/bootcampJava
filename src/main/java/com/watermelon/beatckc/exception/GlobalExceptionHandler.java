@@ -3,6 +3,7 @@ package com.watermelon.beatckc.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -29,6 +30,18 @@ public class GlobalExceptionHandler {
         System.out.println(e.getMessage());
         log.error("校验异常:{}", e.getMessage());
 
+        return new ResponseEntity<>(map, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> catchValidationError(MethodArgumentNotValidException e) {
+        Map<String, Object> map = new HashMap<>();
+        e.getBindingResult().getFieldErrors().forEach(v -> {
+            String paramName = v.getField();
+            String message = v.getDefaultMessage();
+            map.put(paramName, message);
+        });
+        log.error(e.getMessage());
         return new ResponseEntity<>(map, HttpStatus.BAD_REQUEST);
     }
 }
