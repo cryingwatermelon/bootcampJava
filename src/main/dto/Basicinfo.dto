@@ -1,0 +1,13 @@
+export com.watermelon.beatckc.entity.Basicinfo
+    -> package com.watermelon.beatckc.entity.dto
+
+GetView {
+    id
+    nickname
+    email
+}
+
+AddDto {
+    nickname
+    email
+}
