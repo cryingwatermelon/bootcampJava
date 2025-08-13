@@ -1,11 +1,12 @@
 package com.watermelon.beatckc.controller;
 
-import com.watermelon.beatckc.entity.Basicinfo;
 import com.watermelon.beatckc.entity.BasicinfoDraft;
 import com.watermelon.beatckc.entity.Fetchers;
 import com.watermelon.beatckc.entity.Tables;
 import com.watermelon.beatckc.entity.dto.AddDto;
 import com.watermelon.beatckc.entity.dto.GetView;
+import com.watermelon.beatckc.entity.dto.PatchDto;
+import com.watermelon.beatckc.entity.dto.PutDto;
 import com.watermelon.beatckc.validation.NoQQEmailPattern;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -35,6 +36,9 @@ public class UserInfoController implements Tables, Fetchers {
                         BASICINFO_TABLE.fetch(GetView.class)
 
                 ).execute();
+        if (result.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -66,11 +70,63 @@ public class UserInfoController implements Tables, Fetchers {
     @PostMapping
     public ResponseEntity<?> addNewUser(@RequestBody @Valid AddDto user) {
 
-        Basicinfo newUser = BasicinfoDraft.$.produce(d -> {
-            d.setEmail(user.getEmail());
-            d.setNickname(user.getNickname());
-        });
-        jSqlClient.save(newUser);
+        jSqlClient.save(user);
         return new ResponseEntity<>("添加成功", HttpStatus.OK);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteUserById(@PathVariable @Positive Integer id) {
+        var result = jSqlClient.deleteById(GetView.class, id);
+        System.out.println(result);
+        if (result.getTotalAffectedRowCount() == 0) {
+            return new ResponseEntity<String>("删除失败,ID不存在", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<String>("删除成功", HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<String> putUserById(
+            @RequestBody @Valid PutDto user,
+            @PathVariable @Positive Integer id) {
+
+        var existing = jSqlClient.findById(GetView.class, id);
+        if (existing == null) {
+            return new ResponseEntity<String>("更新失败，ID不存在", HttpStatus.NOT_FOUND);
+        }
+
+        var result = jSqlClient.update(user);
+        if (result.getTotalAffectedRowCount() == 0) {
+            return new ResponseEntity<>("更新失败", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        return new ResponseEntity<>("更新成功", HttpStatus.OK);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<String> updateUserPartial(
+            @RequestBody @Valid PatchDto updates,
+            @PathVariable @Positive Integer id) {
+
+        var existing = jSqlClient.findById(GetView.class, id);
+        if (existing == null) {
+            return new ResponseEntity<>("更新失败，ID不存在", HttpStatus.NOT_FOUND);
+        }
+        System.out.println(existing);
+        BasicinfoDraft GetViewDraft = null;
+        var entity = GetViewDraft.$.produce(d -> {
+            d.setId(id); // 必须指定更新哪一条
+            if (updates.getNickname() != null) {
+                d.setNickname(updates.getNickname());
+            }
+            if (updates.getEmail() != null) {
+                d.setEmail(updates.getEmail());
+            }
+        });
+        var result = jSqlClient.update(entity);
+        return result.getTotalAffectedRowCount() > 0
+                ? new ResponseEntity<>("部分更新成功", HttpStatus.OK)
+                : new ResponseEntity<>("更新失败", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+
 }
