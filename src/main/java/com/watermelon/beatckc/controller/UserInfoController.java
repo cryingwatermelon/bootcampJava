@@ -1,6 +1,5 @@
 package com.watermelon.beatckc.controller;
 
-import com.watermelon.beatckc.entity.BasicinfoDraft;
 import com.watermelon.beatckc.entity.Fetchers;
 import com.watermelon.beatckc.entity.Tables;
 import com.watermelon.beatckc.entity.dto.AddDto;
@@ -14,6 +13,7 @@ import jakarta.validation.constraints.Positive;
 import org.babyfish.jimmer.sql.JSqlClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -84,14 +84,16 @@ public class UserInfoController implements Tables, Fetchers {
         return new ResponseEntity<String>("删除成功", HttpStatus.OK);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping()
     public ResponseEntity<String> putUserById(
-            @RequestBody @Valid PutDto user,
-            @PathVariable @Positive Integer id) {
-
-        var existing = jSqlClient.findById(GetView.class, id);
+            @RequestBody @Valid PutDto user) {
+        var id = user.getId();
+        if (id == null || id <= 0) {
+            return new ResponseEntity<String>("id缺失或无效id", HttpStatus.BAD_REQUEST);
+        }
+        var existing = jSqlClient.findById(GetView.class, user.getId());
         if (existing == null) {
-            return new ResponseEntity<String>("更新失败，ID不存在", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<String>("Id不存在", HttpStatus.NOT_FOUND);
         }
 
         var result = jSqlClient.update(user);
@@ -102,31 +104,22 @@ public class UserInfoController implements Tables, Fetchers {
         return new ResponseEntity<>("更新成功", HttpStatus.OK);
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping()
+    @Transactional
     public ResponseEntity<String> updateUserPartial(
-            @RequestBody @Valid PatchDto updates,
-            @PathVariable @Positive Integer id) {
-
+            @RequestBody @Valid PatchDto updates) throws Exception {
+        var id = updates.getId();
+        if (id == null || id <= 0) {
+            return new ResponseEntity<String>("id缺失或无效id", HttpStatus.BAD_REQUEST);
+        }
         var existing = jSqlClient.findById(GetView.class, id);
         if (existing == null) {
             return new ResponseEntity<>("更新失败，ID不存在", HttpStatus.NOT_FOUND);
         }
-        System.out.println(existing);
-        BasicinfoDraft GetViewDraft = null;
-        var entity = GetViewDraft.$.produce(d -> {
-            d.setId(id); // 必须指定更新哪一条
-            if (updates.getNickname() != null) {
-                d.setNickname(updates.getNickname());
-            }
-            if (updates.getEmail() != null) {
-                d.setEmail(updates.getEmail());
-            }
-        });
-        var result = jSqlClient.update(entity);
+        var result = jSqlClient.update(updates);
         return result.getTotalAffectedRowCount() > 0
                 ? new ResponseEntity<>("部分更新成功", HttpStatus.OK)
                 : new ResponseEntity<>("更新失败", HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-
+    //TODO Spring Security basic auth jwts
 }

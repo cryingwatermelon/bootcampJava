@@ -3,6 +3,7 @@ package com.watermelon.beatckc.entity;
 import com.watermelon.beatckc.validation.NoQQEmailPattern;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import org.babyfish.jimmer.sql.*;
 
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
 public interface Basicinfo {
 
     @Id
+    @NotNull
+    @Positive
     @GeneratedValue(strategy = GenerationType.IDENTITY
     )
     int id();
